@@ -21,4 +21,13 @@ exports.handler = async function(event, context) {
         console.error("Error", err);
         throw err;  // Throw the error to signal a failure
     }
-}; 
+};
+
+// This function should return the parameters for describeImages based on the event input
+function getParams(event) {
+    return {
+        // Example parameters, replace with real ones based on your requirements
+        ImageIds: event.ResourceProperties.ImageIds || [],
+        Filters: event.ResourceProperties.Filters || []
+    };
+}
