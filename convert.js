@@ -1,3 +1,14 @@
+
+================================================================
+var aws = require("aws-sdk");
+var ec2 = null;
+
+exports.handler = function(event, context) {
+ec2 = new aws.EC2({region: event.ResourceProperties.Region})
+var params = getParams(event);
+ec2.describeImages(params, ProcResult)
+}
+================================================================
 // Import required AWS SDK clients and commands for Node.js
 const { EC2Client, DescribeImagesCommand } = require("@aws-sdk/client-ec2");
 
@@ -31,3 +42,76 @@ function getParams(event) {
         Filters: event.ResourceProperties.Filters || []
     };
 }
+================================================================
+var apiGateway = new AWS.APIGateway({
+  apiVersion: ''
+});
+
+exports.handler = function (event, context, callback){
+  var apId = event.ResourceProperties.ApiId;
+  var buildTag = event.ResourceProperties.BuildTag;
+  var apiStage = event. ResourceProperties.ApiStage;
+  var deployOrRollback = event.ResourceProperties.DeployOrRollback;
+
+  apiGateway.updateStage({
+    restApiId: apiId,
+    stageName: apiStage,
+    patchOperations: [{
+      path: "/deploymentId",
+      op: "replace",
+      value: deployment.id
+    }]
+  })
+
+  apiGateway.createDeployment(param,function(err, data){
+    console.log("Error")
+  })
+}
+
+================================================================
+// Import required AWS SDK clients and commands for Node.js
+const { APIGatewayClient, UpdateStageCommand, CreateDeploymentCommand } = require("@aws-sdk/client-api-gateway");
+
+exports.handler = async function (event, context) {
+    // Initialize the API Gateway client
+    const apiGateway = new APIGatewayClient({});
+
+    const apId = event.ResourceProperties.ApiId;
+    const buildTag = event.ResourceProperties.BuildTag;
+    const apiStage = event.ResourceProperties.ApiStage;
+    const deployOrRollback = event.ResourceProperties.DeployOrRollback;
+
+    try {
+        // Update the stage with the new deployment ID
+        const updateStageParams = {
+            restApiId: apId,
+            stageName: apiStage,
+            patchOperations: [{
+                path: "/deploymentId",
+                op: "replace",
+                value: buildTag  // Assuming `buildTag` holds the deployment ID
+            }]
+        };
+        const updateStageCommand = new UpdateStageCommand(updateStageParams);
+        await apiGateway.send(updateStageCommand);
+
+        // Create a new deployment
+        const createDeploymentParams = {
+            restApiId: apId,
+            stageName: apiStage,
+            description: `Deployment triggered by ${deployOrRollback}`,
+            stageDescription: `Deployed by Lambda function - ${buildTag}`
+        };
+        const createDeploymentCommand = new CreateDeploymentCommand(createDeploymentParams);
+        const deploymentData = await apiGateway.send(createDeploymentCommand);
+
+        console.log("Deployment successful:", deploymentData);
+    } catch (err) {
+        console.error("Error:", err);
+        throw err;  // Propagate the error to signal a failure in the Lambda execution
+    }
+};
+
+================================================================
+
+================================================================
