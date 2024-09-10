@@ -113,5 +113,93 @@ exports.handler = async function (event, context) {
 };
 
 ================================================================
+    var AWS = require("aws-sdk")
+
+var apiGateway = new AWS.APIGateway({
+  apiVersion: ''
+});
+
+exports.handler = function (event, context, callback){
+  var apId = event.ResourceProperties.ApiId;
+  var buildTag = event.ResourceProperties.BuildTag;
+  var apiStage = event. ResourceProperties.ApiStage;
+  var deployOrRollback = event.ResourceProperties.DeployOrRollback;
+
+  if(apiStage && apiStage != null){
+    apiGateway.updateStage({
+      restApiId: apiId,
+      stageName: apiStage,
+      patchOperations: [{
+        path: "/deploymentId",
+        op: "replace",
+        value: deployment.id
+      }]
+    }, function(err, data){
+      if(err){
+        console.log("apiGateway.updateStage error", err.stack);
+        callback(err);
+      }
+      else {
+        callback(null);
+      }
+    })
+    
+  }
+
+
+  apiGateway.createDeployment(param,function(err, data){
+    if(err){
+      console.log("Error");
+      callback(err);
+    }
+    else{
+      callback(null);
+    }
+  })
+}
+================================================================
+const { APIGateway } = require("@aws-sdk/client-api-gateway");
+
+const apiGateway = new APIGateway({
+  apiVersion: ''
+});
+
+exports.handler = async function (event, context) {
+  const apId = event.ResourceProperties.ApiId;
+  const buildTag = event.ResourceProperties.BuildTag;
+  const apiStage = event.ResourceProperties.ApiStage;
+  const deployOrRollback = event.ResourceProperties.DeployOrRollback;
+
+  try {
+    if (apiStage && apiStage !== null) {
+      const updateStageParams = {
+        restApiId: apId,
+        stageName: apiStage,
+        patchOperations: [{
+          path: "/deploymentId",
+          op: "replace",
+          value: deployment.id // Make sure "deployment" is defined
+        }]
+      };
+      const updateStageResponse = await apiGateway.updateStage(updateStageParams);
+      console.log("Update stage response:", updateStageResponse);
+    }
+
+    const createDeploymentParams = {
+      restApiId: apId,
+      stageName: apiStage,
+      description: buildTag
+      // Include other necessary parameters for deployment
+    };
+    const createDeploymentResponse = await apiGateway.createDeployment(createDeploymentParams);
+    console.log("Deployment created:", createDeploymentResponse);
+
+    return { statusCode: 200, body: "Deployment or update successful" };
+
+  } catch (error) {
+    console.error("Error occurred:", error);
+    return { statusCode: 500, body: JSON.stringify(error) };
+  }
+};
 
 ================================================================
